@@ -2,7 +2,7 @@
 #include <iostream>
 
 Mnist::Mnist(int samples_amount, std::string images_filepath, std::string labels_filepath) {
-    std::cout << "opened mnist";
+    std::cout << "opened mnist" << std::endl;
 
     this->samples_amount = samples_amount;
     this->count = -1;
@@ -26,6 +26,9 @@ Mnist::Mnist(int samples_amount, std::string images_filepath, std::string labels
     }
 }
 
+const uint Mnist::expected_size;
+const uint Mnist::image_size;
+
 Mnist::~Mnist() {
     delete [] curr_image;
     delete [] curr_expected;
@@ -45,6 +48,8 @@ void Mnist::print_sample() {
         std::cout << std::endl;
 	}
     std::cout << "Label: " << (int)(curr_label) << std::endl;
+    std::cout << "Expected: ["; for (int i = 0; i < expected_size - 1; i++) { std::cout << curr_expected[i] << ","; } 
+    std::cout << curr_expected[expected_size - 1] << "]" << std::endl;
 }
 
 void Mnist::get_next_sample() {

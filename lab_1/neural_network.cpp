@@ -133,12 +133,21 @@ int NeuralNetwork::train(std::vector<RowVector*> input, std::vector<RowVector*> 
         int number_guessed_1 = get_res_from_output(*(output[i]));
         int number_guessed_2 = get_res_from_output(*neuronLayers.back());
         if (number_guessed_1 == number_guessed_2) {
-            std::cout << "\tMatch : " << number_guessed_1 << std::endl;
             c++;
-        } else {
-            std::cout << "\tMismatch : expected " << number_guessed_1 << " got " << number_guessed_2 <<std::endl;
         }
         propagateBackward(*output[i]);
     }
     return c;
+}
+
+bool NeuralNetwork::test(RowVector* input, RowVector* output) {
+    propagateForward(*input);
+    int number_guessed_1 = get_res_from_output(*(output));
+    int number_guessed_2 = get_res_from_output(*neuronLayers.back());
+    if (number_guessed_1 == number_guessed_2) {
+        std::cout << "\tMatch : " << number_guessed_1 << std::endl;
+        return true;
+    }
+    std::cout << "\tMismatch : expected " << number_guessed_1 << " got " << number_guessed_2 <<std::endl;
+    return false;
 }

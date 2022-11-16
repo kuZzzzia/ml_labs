@@ -28,6 +28,8 @@ public:
  
     // function to train the neural network give an array of data points
     int train(std::vector<RowVector*> input, std::vector<RowVector*> output);
+    // function to train the neural network give an array of data points
+    bool test(RowVector* input, RowVector* output);
  
     // storage objects for working of neural network
     /*

@@ -5,8 +5,8 @@ class Mnist {
 public:
     static const uint width = 28;
     static const uint height = 28;
-    static const uint image_size = width * height;
-    static const uint expected_size = 10; // 10 numbers from 0 to 9 
+    const static uint image_size = width * height;
+    const static uint expected_size = 10; // 10 numbers from 0 to 9 
     
     int* curr_image;
     char curr_label;
