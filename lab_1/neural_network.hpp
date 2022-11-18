@@ -30,7 +30,10 @@ public:
     // function to train the neural network give an array of data points
     void train(std::vector<RowVector*> &input, std::vector<RowVector*> &output, std::vector<int> &res);
     // function to train the neural network give an array of data points
-    int test(std::vector<RowVector*> &input, std::vector<int> &res);
+    void test(std::vector<RowVector*> &input, std::vector<RowVector*> &output, std::vector<int> &res);
+
+    Scalar calc_cost(RowVector* x);
+    int get_res_from_output();
  
     // storage objects for working of neural network
     /*

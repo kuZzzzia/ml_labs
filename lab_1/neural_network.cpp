@@ -79,7 +79,8 @@ void NeuralNetwork::propagateBackward(RowVector& output)
     updateWeights();
 }
 
-int get_res_from_output(RowVector* v) {
+int NeuralNetwork::get_res_from_output() {
+    RowVector* v = neuronLayers.back();
     double max = v->coeff(0);
     int arg = 0; 
     for (int j = 1; j < 10; j++) {
@@ -89,6 +90,15 @@ int get_res_from_output(RowVector* v) {
         }
     }
     return arg;
+}
+
+Scalar NeuralNetwork::calc_cost(RowVector* x) {
+    double err = 0;
+    RowVector *res = neuronLayers.back();
+    for (int i = 0; i < x->size(); i++) {
+        err += (x->coeff(i) - res->coeff(i))*(x->coeff(i) - res->coeff(i));
+    }
+    return err / 2;
 }
 
 
@@ -101,14 +111,16 @@ void NeuralNetwork::train(std::vector<RowVector*> &input, std::vector<RowVector*
     }
 }
 
-int NeuralNetwork::test(std::vector<RowVector*> &input, std::vector<int> &res) {
-    int c = 0;
+void NeuralNetwork::test(std::vector<RowVector*> &input, std::vector<RowVector*> &output, std::vector<int> &res) {
+    Scalar accuracy = 0;
+    Scalar loss = 0;
     for (int i = 0; i < input.size(); i++) {
         propagateForward(*input[i]);
-        int number_guessed = get_res_from_output(neuronLayers.back());
+        int number_guessed = get_res_from_output();
         if (res[i] == number_guessed) {
-            c++;
+            accuracy++;
         }
+        loss += calc_cost(output[i]);
     }
-    return c;
+    std::cout << "accuracy: " << accuracy / res.size() << " , loss: " << loss / res.size() << std::endl << std::endl;
 }
