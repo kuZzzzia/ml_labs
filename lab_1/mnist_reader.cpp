@@ -18,24 +18,49 @@ Mnist::Mnist(int samples_amount, std::string images_filepath, std::string labels
     for (int i = 0; i < 8; i++) {
         this->label_fstream.read(&number, sizeof(char));
 	}
-    curr_image = new int[this->image_size];
-    curr_label = 0;
-    curr_expected = new float[this->expected_size];
-    for (int i = 0; i < this->expected_size; i++) {
-        curr_expected[i] = 0.0;
+    //alloc mem
+    images = new int*[this->samples_amount];
+    labels = new char[this->samples_amount];
+    expecteds = new int*[this->samples_amount];
+    for (int i = 0; i < this->samples_amount; i++) {
+        images[i] = new int[this->image_size];
+        expecteds[i] = new int[this->expected_size];
+        for (int j = 0; j < this->expected_size; j++) {
+            expecteds[i][j] = 0;
+        }
     }
+
+    for (int k = 0; k < samples_amount; k++) {
+        // reading image
+        char number;
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                image_fstream.read(&number, sizeof(char));
+                images[k][i * width + j] = number == 0 ? 0 : 1;
+            }
+        }
+        // reading label
+        label_fstream.read(&number, sizeof(char));
+        labels[k] = number;
+        expecteds[k][number] = 1;
+    }
+    std::cout << "closed mnist" << std::endl;
 }
 
 const uint Mnist::expected_size;
 const uint Mnist::image_size;
 
 Mnist::~Mnist() {
-    delete [] curr_image;
-    delete [] curr_expected;
-    std::cout << "closed mnist" << std::endl;
+    for (int i = 0; i < samples_amount; i++) {
+        delete [] images[i];
+        delete [] expecteds[i];
+    }
+    delete [] images;
+    delete [] labels;
+    delete [] expecteds;
 }
 
-void Mnist::print_sample() {
+void Mnist::print_sample(int num) {
     if (count < 0) {
         std::cout << "Read sample first";
         return;
@@ -43,36 +68,72 @@ void Mnist::print_sample() {
     std::cout << "Image:" << std::endl;
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            std::cout << curr_image[i * width + j];
+            std::cout << images[num][i * width + j];
         }
         std::cout << std::endl;
 	}
-    std::cout << "Label: " << (int)(curr_label) << std::endl;
-    std::cout << "Expected: ["; for (int i = 0; i < expected_size - 1; i++) { std::cout << curr_expected[i] << ","; } 
-    std::cout << curr_expected[expected_size - 1] << "]" << std::endl;
+    std::cout << "Label: " << (int)(labels[num]) << std::endl;
+    std::cout << "Expected: ["; for (int i = 0; i < expected_size - 1; i++) { std::cout << expecteds[num][i] << ","; } 
+    std::cout << expecteds[num][expected_size - 1] << "]" << std::endl;
 }
 
-void Mnist::get_next_sample() {
+int* Mnist::get_image() {
+    return images[count];
+}
+
+int* Mnist::get_expected() {
+    return expecteds[count];
+}
+
+int Mnist::get_label() {
+    return labels[count];
+}
+
+void Mnist::next() {
     if (!has_next()) {
         std::cout << "no samples found" << std::endl;
         return;
     }
-    // reading image
-    char number;
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            image_fstream.read(&number, sizeof(char));
-            curr_image[i * width + j] = number == 0 ? 0 : 1;
-        }
-	}
-	// reading label
-    curr_expected[curr_label] = 0.0;
-    label_fstream.read(&curr_label, sizeof(char));
-    curr_expected[curr_label] = 1.0;
     count++;
 }
 
 bool Mnist::has_next() {
-    return (this->count + 1) < this->samples_amount;
+    return this->count + 1 < this->samples_amount;
 }
 
+void Mnist::reset_counter() {
+    count = -1;
+}
+
+void Mnist::get_batches(
+    const int &batch_size, std::vector<std::vector<RowVector*>>& data_in, 
+    std::vector<std::vector<RowVector*>>& data_out, std::vector<std::vector<int>> &res) {
+
+    data_in.clear();
+    data_out.clear();
+	res.clear();
+
+	while(has_next()) {
+		std::vector<RowVector*> in_buff, out_buff;
+		std::vector<int> res_buff;
+		for (int i = 0; i < batch_size; i++) {
+			if (has_next()) {
+				next();
+				in_buff.push_back(new RowVector(1, image_size));
+				int* image = get_image();
+				for (int k = 0; k < image_size; k++) {
+					in_buff.back()->coeffRef(k) = Scalar(image[k]);
+				}
+				res_buff.push_back(get_label());
+				out_buff.push_back(new RowVector(1, expected_size));
+				int* expected = get_expected();
+				for (int k = 0; k < expected_size; k++) {
+					out_buff.back()->coeffRef(k) = Scalar(expected[k]);
+				}
+			}
+		}
+		data_in.push_back(in_buff);
+		data_out.push_back(out_buff);
+        res.push_back(res_buff);
+	}
+} 

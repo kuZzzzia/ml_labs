@@ -1,6 +1,7 @@
 #include <eigen3/Eigen/Eigen>
 #include <iostream>
 #include <vector>
+#define import
 
 // use typedefs for future ease for changing data types like : float to double
 typedef float Scalar;
@@ -27,9 +28,9 @@ public:
     void updateWeights();
  
     // function to train the neural network give an array of data points
-    int train(std::vector<RowVector*> input, std::vector<RowVector*> output);
+    void train(std::vector<RowVector*> &input, std::vector<RowVector*> &output, std::vector<int> &res);
     // function to train the neural network give an array of data points
-    bool test(RowVector* input, RowVector* output);
+    int test(std::vector<RowVector*> &input, std::vector<int> &res);
  
     // storage objects for working of neural network
     /*
