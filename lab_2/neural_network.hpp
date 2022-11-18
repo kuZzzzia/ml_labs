@@ -10,10 +10,18 @@ typedef Eigen::MatrixXd Matrix;
 typedef Eigen::RowVectorXd RowVector;
 typedef Eigen::VectorXd ColVector;
 
+enum Optimizer {
+    SGD,
+    Momentum,
+    AdaGrad,
+    RMSprop,
+    Adam
+};
+
 class NeuralNetwork {
 public:
     // constructor
-    NeuralNetwork(std::vector<uint> topology, Scalar learningRate = Scalar(0.005));
+    NeuralNetwork(std::vector<uint> topology, Scalar learningRate = Scalar(0.005), Optimizer optimizer = SGD, int batchSize = 1000);
  
     // function for forward propagation of data
     void propagateForward(RowVector& input);
@@ -47,5 +55,9 @@ public:
     std::vector<RowVector*> cacheLayers; // stores the unactivated (activation fn not yet applied) values of layers
     std::vector<RowVector*> deltas; // stores the error contribution of each neurons
     std::vector<Matrix*> weights; // the connection weights itself
+    std::vector<Matrix*> prevDeltaWeights; // the connection weights itself
+    std::vector<Matrix*> prevDeltaWeightsSquared; // the connection weights itself
     Scalar learningRate;
+    Optimizer optimizer;
+    int batchSize;
 };

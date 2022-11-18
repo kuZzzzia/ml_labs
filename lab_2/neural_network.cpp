@@ -1,4 +1,5 @@
 #include "neural_network.hpp"
+#include <cmath>
 
 Scalar sigmoid(Scalar x) {
     return 1.0 / (1.0 + exp(-x));
@@ -8,7 +9,7 @@ Scalar sigmoidDerivative(Scalar x) {
     return sigmoid(x)*(1-sigmoid(x));
 }
 
-NeuralNetwork::NeuralNetwork(std::vector<uint> topology, Scalar learningRate)
+NeuralNetwork::NeuralNetwork(std::vector<uint> topology, Scalar learningRate, Optimizer optimizer, int batchSize)
 {
     this->topology = topology;
     this->learningRate = learningRate;
@@ -24,9 +25,15 @@ NeuralNetwork::NeuralNetwork(std::vector<uint> topology, Scalar learningRate)
         // initialize weights matrix
         if (i > 0) {
             weights.push_back(new Matrix(topology[i - 1], topology[i]));
+            prevDeltaWeights.push_back(new Matrix(topology[i - 1], topology[i]));
+            prevDeltaWeightsSquared.push_back(new Matrix(topology[i - 1], topology[i]));
             weights.back()->setRandom();
+            prevDeltaWeights.back()->setZero();
+            prevDeltaWeightsSquared.back()->setZero();
         }
     }
+    this->optimizer = optimizer;
+    this->batchSize = batchSize; 
 };
 
 
@@ -39,10 +46,9 @@ void NeuralNetwork::propagateForward(RowVector& input)
  
     // propagate the data forward and then
     for (uint i = 1; i < topology.size(); i++) {
-        (*neuronLayers[i]) = (*neuronLayers[i - 1]) * (*weights[i - 1]);
-        (*cacheLayers[i]) = (*neuronLayers[i]);
+        (*cacheLayers[i]) = (*neuronLayers[i - 1]) * (*weights[i - 1]);
         for (uint j = 0; j < topology[i]; j++) {
-            neuronLayers[i]->coeffRef(j) = sigmoid(neuronLayers[i]->coeffRef(j));
+            neuronLayers[i]->coeffRef(j) = sigmoid(cacheLayers[i]->coeffRef(j));
         }
     }
 }
@@ -58,19 +64,80 @@ void NeuralNetwork::calcErrors(RowVector& output)
     // and we will continue till the first hidden layer
     for (uint i = topology.size() - 2; i > 0; i--) {
         (*deltas[i]) = (*deltas[i + 1]) * (weights[i]->transpose());
+        for (uint j = 0; j < cacheLayers[i]->size(); j++) {
+            deltas[i]->coeffRef(j) *= sigmoidDerivative(cacheLayers[i]->coeffRef(j)); //hadamar product
+        }
     }
 }
 
 void NeuralNetwork::updateWeights()
-{
-    // topology.size()-1 = weights.size()
-    for (uint i = 0; i < topology.size() - 1; i++) {
-        for (uint c = 0; c < weights[i]->cols(); c++) {
-            for (uint r = 0; r < weights[i]->rows(); r++) {
-                weights[i]->coeffRef(r, c) += learningRate * deltas[i + 1]->coeffRef(c) * sigmoidDerivative(cacheLayers[i + 1]->coeffRef(c)) * neuronLayers[i]->coeffRef(r);
+{ 
+    double coeffM = 0.8;
+    double eps = 1e-7;
+    double beta = 0.9;
+    switch (optimizer)
+    {
+    case SGD:
+        for (uint i = 0; i < topology.size() - 1; i++) {
+            for (uint c = 0; c < weights[i]->cols(); c++) {
+                for (uint r = 0; r < weights[i]->rows(); r++) {
+                    weights[i]->coeffRef(r, c) += learningRate * deltas[i + 1]->coeffRef(c) * neuronLayers[i]->coeffRef(r) / batchSize;
+                }
             }
         }
+        break;
+    case Momentum:
+        for (uint i = 0; i < topology.size() - 1; i++) {
+            for (uint c = 0; c < weights[i]->cols(); c++) {
+                for (uint r = 0; r < weights[i]->rows(); r++) {
+                    prevDeltaWeights[i]->coeffRef(r, c) 
+                    = learningRate * deltas[i + 1]->coeffRef(c) * neuronLayers[i]->coeffRef(r) / batchSize
+                    + coeffM * prevDeltaWeights[i]->coeffRef(r, c);
+                    weights[i]->coeffRef(r, c) 
+                    += prevDeltaWeights[i]->coeffRef(r, c);
+                }
+            }
+        }
+        break;
+    case AdaGrad:
+        for (uint i = 0; i < topology.size() - 1; i++) {
+            for (uint c = 0; c < weights[i]->cols(); c++) {
+                for (uint r = 0; r < weights[i]->rows(); r++) {
+                    double grad_rc = deltas[i + 1]->coeffRef(c) * neuronLayers[i]->coeffRef(r) / batchSize;
+                    prevDeltaWeights[i]->coeffRef(r, c) += grad_rc * grad_rc;
+                    weights[i]->coeffRef(r, c) += 0.01 * grad_rc/sqrt(prevDeltaWeights[i]->coeff(r, c) + 1e-7);
+                }
+            }
+        }
+        break;
+    case RMSprop:
+        for (uint i = 0; i < topology.size() - 1; i++) {
+            for (uint c = 0; c < weights[i]->cols(); c++) {
+                for (uint r = 0; r < weights[i]->rows(); r++) {
+                    double grad_rc = deltas[i + 1]->coeffRef(c) * neuronLayers[i]->coeffRef(r) / batchSize;
+                    prevDeltaWeights[i]->coeffRef(r, c) = prevDeltaWeights[i]->coeff(r, c) * 0.9 + 0.1 * grad_rc * grad_rc;
+                    weights[i]->coeffRef(r, c) += 0.001 * grad_rc/sqrt(prevDeltaWeights[i]->coeff(r, c) + 1e-6);
+                }
+            }
+        }
+        break;
+    case Adam:
+        for (uint i = 0; i < topology.size() - 1; i++) {
+            for (uint c = 0; c < weights[i]->cols(); c++) {
+                for (uint r = 0; r < weights[i]->rows(); r++) {
+                    double grad_rc = deltas[i + 1]->coeffRef(c) * neuronLayers[i]->coeffRef(r) / batchSize;
+                    prevDeltaWeights[i]->coeffRef(r, c) = prevDeltaWeights[i]->coeff(r, c) * 0.9 + 0.1 * grad_rc;
+                    prevDeltaWeightsSquared[i]->coeffRef(r, c) = prevDeltaWeights[i]->coeff(r, c) * 0.999 + 0.001 * grad_rc * grad_rc;
+                    weights[i]->coeffRef(r, c) += 0.01 / (sqrt(prevDeltaWeightsSquared[i]->coeff(r, c)/0.001)+1e-8)*prevDeltaWeights[i]->coeff(r, c)/0.1;
+                }
+            }
+        }
+        break;     
+    default:
+        break;
     }
+    // topology.size()-1 = weights.size()
+    
 }
 
 void NeuralNetwork::propagateBackward(RowVector& output)
