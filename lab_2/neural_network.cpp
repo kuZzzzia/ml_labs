@@ -127,7 +127,7 @@ void NeuralNetwork::updateWeights()
                 for (uint r = 0; r < weights[i]->rows(); r++) {
                     double grad_rc = deltas[i + 1]->coeffRef(c) * neuronLayers[i]->coeffRef(r) / batchSize;
                     prevDeltaWeights[i]->coeffRef(r, c) = prevDeltaWeights[i]->coeff(r, c) * 0.9 + 0.1 * grad_rc;
-                    prevDeltaWeightsSquared[i]->coeffRef(r, c) = prevDeltaWeights[i]->coeff(r, c) * 0.999 + 0.001 * grad_rc * grad_rc;
+                    prevDeltaWeightsSquared[i]->coeffRef(r, c) = prevDeltaWeightsSquared[i]->coeff(r, c) * 0.999 + 0.001 * grad_rc * grad_rc;
                     weights[i]->coeffRef(r, c) += 0.01 / (sqrt(prevDeltaWeightsSquared[i]->coeff(r, c)/0.001)+1e-8)*prevDeltaWeights[i]->coeff(r, c)/0.1;
                 }
             }
@@ -178,7 +178,7 @@ void NeuralNetwork::train(std::vector<RowVector*> &input, std::vector<RowVector*
     }
 }
 
-void NeuralNetwork::test(std::vector<RowVector*> &input, std::vector<RowVector*> &output, std::vector<int> &res) {
+void NeuralNetwork::test(std::ofstream &myfile, std::vector<RowVector*> &input, std::vector<RowVector*> &output, std::vector<int> &res) {
     Scalar accuracy = 0;
     Scalar loss = 0;
     for (int i = 0; i < input.size(); i++) {
@@ -189,5 +189,5 @@ void NeuralNetwork::test(std::vector<RowVector*> &input, std::vector<RowVector*>
         }
         loss += calc_cost(output[i]);
     }
-    std::cout << "accuracy: " << accuracy / res.size() << " , loss: " << loss / res.size() << std::endl << std::endl;
+    myfile << accuracy / res.size() << "," << loss / res.size() << std::endl;
 }
