@@ -11,7 +11,7 @@ def save_plot(x, arr, path:str):
     plt.savefig(path)
 
 def main():
-    with open('ml_labs/lab_2/res/res.csv') as csv_file:
+    with open('ml_labs/lab_3/res/res2.csv') as csv_file:
         n = 5
         x_epochs, time, acc, loss = [i for i in range(1, n+1)], [], [], []
 
@@ -37,8 +37,8 @@ def main():
                     curr_loss = []
                 line_count += 1
 
-        save_plot(x_epochs, time, 'ml_labs/lab_2/res/time.png')
-        save_plot(x_epochs, acc, 'ml_labs/lab_2/res/acc.png')
-        save_plot(x_epochs, loss, 'ml_labs/lab_2/res/loss.png')
+        save_plot(x_epochs, time, 'ml_labs/lab_3/res/time2.png')
+        save_plot(x_epochs, acc, 'ml_labs/lab_3/res/acc2.png')
+        save_plot(x_epochs, loss, 'ml_labs/lab_3/res/loss2.png')
 
 main()

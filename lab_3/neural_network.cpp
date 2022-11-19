@@ -83,8 +83,9 @@ void NeuralNetwork::updateWeights()
         for (uint i = 0; i < topology.size() - 1; i++) {
             for (uint c = 0; c < weights[i]->cols(); c++) {
                 for (uint r = 0; r < weights[i]->rows(); r++) {
-                    weights[i]->coeffRef(r, c) += learningRate * deltas[i + 1]->coeffRef(c) * neuronLayers[i]->coeffRef(r) / batchSize 
-                                                + l1 * (weights[i]->coeff(r, c) < 0 ? -1 : 1) + l2 * weights[i]->coeff(r, c);
+                    double delta = learningRate * deltas[i + 1]->coeffRef(c) * neuronLayers[i]->coeffRef(r) 
+                                    + l1 * (weights[i]->coeff(r, c) < 0 ? -1 : 1) + l2 * weights[i]->coeff(r, c);
+                    weights[i]->coeffRef(r, c) += delta / batchSize;
                 }
             }
         }

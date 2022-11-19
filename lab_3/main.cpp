@@ -43,12 +43,12 @@ void trainWithOptimizer(ofstream &myfile, int layers, Scalar l1, Scalar l2, Mnis
 		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		if (l1 != 0 && l2 != 0) {
 			myfile << "L1+L2,";
-		} else if (l2 != 0) {
-			myfile << "L1,";
 		} else if (l1 != 0) {
+			myfile << "L1,";
+		} else if (l2 != 0) {
 			myfile << "L2,";
 		} else {
-			myfile << layers;
+			myfile << layers << ",";
 		}
 		myfile << e+1 << ","; 
 		myfile << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << ",";
@@ -67,21 +67,21 @@ int main() {
 	test_samples.get_batches(test_samples_amount, in_test, out_test, test_res);
 
 	ofstream myfile;
-  	myfile.open ("res/res1.csv");
-  	myfile << "Hidden,Epoch,Time,Accuracy,Loss\n";
+  	// myfile.open ("res/res1.csv");
+  	// myfile << "Hidden,Epoch,Time,Accuracy,Loss\n";
 
-	trainWithOptimizer(myfile, 0, 0, 0, train_samples, test_samples);
-	trainWithOptimizer(myfile, 1, 0, 0, train_samples, test_samples);
-	trainWithOptimizer(myfile, 2, 0, 0, train_samples, test_samples);
-	trainWithOptimizer(myfile, 3, 0, 0, train_samples, test_samples);
-	myfile.close();
+	// trainWithOptimizer(myfile, 0, 0, 0, train_samples, test_samples);
+	// trainWithOptimizer(myfile, 1, 0, 0, train_samples, test_samples);
+	// trainWithOptimizer(myfile, 2, 0, 0, train_samples, test_samples);
+	// trainWithOptimizer(myfile, 3, 0, 0, train_samples, test_samples);
+	// myfile.close();
 
 	myfile.open ("res/res2.csv");
   	myfile << "Regularisation,Epoch,Time,Accuracy,Loss\n";
 	trainWithOptimizer(myfile, 1, 0, 0, train_samples, test_samples);
 	trainWithOptimizer(myfile, 1, 0.001, 0, train_samples, test_samples);
 	trainWithOptimizer(myfile, 1, 0, 0.001, train_samples, test_samples);
-	trainWithOptimizer(myfile, 1, 0.005, 0.005, train_samples, test_samples);
+	trainWithOptimizer(myfile, 1, 0.0005, 0.0005, train_samples, test_samples);
 
 	myfile.close();
 
