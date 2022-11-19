@@ -24,9 +24,15 @@ vector<vector<RowVector*>> in_dat, out_dat, in_test, out_test;
 vector<vector<int>> train_res, test_res;
 
 
-void trainWithOptimizer(ofstream &myfile, Optimizer o, Mnist &train_samples, Mnist &test_samples) {
+void trainWithOptimizer(ofstream &myfile, int layers, Scalar l1, Scalar l2, Mnist &train_samples, Mnist &test_samples) {
+	vector<uint> topology;
+	for (int i = 0; i < layers; i++) {
+		topology.push_back(10);
+	}
+	topology.push_back(Mnist::expected_size);
+	topology.insert(topology.begin(), Mnist::image_size);
 
-	NeuralNetwork n({ Mnist::image_size, 16,  Mnist::expected_size }, learning_rate, o);
+	NeuralNetwork n(topology, learning_rate, l1, l2, SGD);
 	for (int e = 0; e < epoch_amount; e++) {
 		std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 		cout << "Epoch " << e + 1 << "/" << epoch_amount <<  endl;
@@ -35,7 +41,16 @@ void trainWithOptimizer(ofstream &myfile, Optimizer o, Mnist &train_samples, Mni
 			n.train(in_dat[i], out_dat[i], train_res[i]);
 		}
 		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-		myfile << o << "," << e+1 << ","; 
+		if (l1 != 0 && l2 != 0) {
+			myfile << "L1+L2,";
+		} else if (l2 != 0) {
+			myfile << "L1,";
+		} else if (l1 != 0) {
+			myfile << "L2,";
+		} else {
+			myfile << layers;
+		}
+		myfile << e+1 << ","; 
 		myfile << std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() << ",";
 		n.test(myfile, in_test[0], out_test[0], test_res[0]);
 
@@ -52,14 +67,21 @@ int main() {
 	test_samples.get_batches(test_samples_amount, in_test, out_test, test_res);
 
 	ofstream myfile;
-  	myfile.open ("res/res.csv");
-  	myfile << "Optimizer,Epoch,Time,Accuracy,Loss\n";
+  	myfile.open ("res/res1.csv");
+  	myfile << "Hidden,Epoch,Time,Accuracy,Loss\n";
 
-	// trainWithOptimizer(myfile, SGD, train_samples, test_samples);
-	// trainWithOptimizer(myfile, Momentum, train_samples, test_samples);
-	// trainWithOptimizer(myfile, AdaGrad, train_samples, test_samples);
-	// trainWithOptimizer(myfile, RMSprop, train_samples, test_samples);
-	trainWithOptimizer(myfile, Adam, train_samples, test_samples);
+	trainWithOptimizer(myfile, 0, 0, 0, train_samples, test_samples);
+	trainWithOptimizer(myfile, 1, 0, 0, train_samples, test_samples);
+	trainWithOptimizer(myfile, 2, 0, 0, train_samples, test_samples);
+	trainWithOptimizer(myfile, 3, 0, 0, train_samples, test_samples);
+	myfile.close();
+
+	myfile.open ("res/res2.csv");
+  	myfile << "Regularisation,Epoch,Time,Accuracy,Loss\n";
+	trainWithOptimizer(myfile, 1, 0, 0, train_samples, test_samples);
+	trainWithOptimizer(myfile, 1, 0.001, 0, train_samples, test_samples);
+	trainWithOptimizer(myfile, 1, 0, 0.001, train_samples, test_samples);
+	trainWithOptimizer(myfile, 1, 0.005, 0.005, train_samples, test_samples);
 
 	myfile.close();
 

@@ -22,7 +22,7 @@ enum Optimizer {
 class NeuralNetwork {
 public:
     // constructor
-    NeuralNetwork(std::vector<uint> topology, Scalar learningRate = Scalar(0.005), Optimizer optimizer = SGD, int batchSize = 1000);
+    NeuralNetwork(std::vector<uint> topology, Scalar learningRate = Scalar(0.005), Scalar l1=0, Scalar l2=0, Optimizer optimizer = SGD, int batchSize = 1000);
  
     // function for forward propagation of data
     void propagateForward(RowVector& input);
@@ -61,4 +61,6 @@ public:
     Scalar learningRate;
     Optimizer optimizer;
     int batchSize;
+    Scalar l1;
+    Scalar l2;
 };

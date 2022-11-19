@@ -9,7 +9,7 @@ Scalar sigmoidDerivative(Scalar x) {
     return sigmoid(x)*(1-sigmoid(x));
 }
 
-NeuralNetwork::NeuralNetwork(std::vector<uint> topology, Scalar learningRate, Optimizer optimizer, int batchSize)
+NeuralNetwork::NeuralNetwork(std::vector<uint> topology, Scalar learningRate, Scalar l1, Scalar l2, Optimizer optimizer, int batchSize)
 {
     this->topology = topology;
     this->learningRate = learningRate;
@@ -34,6 +34,8 @@ NeuralNetwork::NeuralNetwork(std::vector<uint> topology, Scalar learningRate, Op
     }
     this->optimizer = optimizer;
     this->batchSize = batchSize; 
+    this->l1 = l1;
+    this->l2 = l2;
 };
 
 
@@ -81,7 +83,8 @@ void NeuralNetwork::updateWeights()
         for (uint i = 0; i < topology.size() - 1; i++) {
             for (uint c = 0; c < weights[i]->cols(); c++) {
                 for (uint r = 0; r < weights[i]->rows(); r++) {
-                    weights[i]->coeffRef(r, c) += learningRate * deltas[i + 1]->coeffRef(c) * neuronLayers[i]->coeffRef(r) / batchSize;
+                    weights[i]->coeffRef(r, c) += learningRate * deltas[i + 1]->coeffRef(c) * neuronLayers[i]->coeffRef(r) / batchSize 
+                                                + l1 * (weights[i]->coeff(r, c) < 0 ? -1 : 1) + l2 * weights[i]->coeff(r, c);
                 }
             }
         }
